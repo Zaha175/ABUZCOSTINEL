@@ -4,96 +4,117 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MPU Întrebări și Răspunsuri</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
-        body {
-            margin: 0;
-            padding: 20px;
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-        }
-
         .container {
             display: flex;
             gap: 20px;
             max-width: 1400px;
             margin: 0 auto;
+            padding: 0;
         }
-
-        .questions, .answers {
+        .questions,
+        .answers {
             flex: 1;
-            min-width: 300px;
-            padding: 20px;
+        }
+        .questions {
+            padding: 0;
+            margin-right: 20px;
+        }
+        .questions-list {
+            display: flex;
+            flex-direction: column;
             height: 90vh;
             overflow-y: auto;
-            box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.15); /* Mehr Schatten */
-            border: none; /* Rand entfernt */
-        }
-
-        .questions .question-list {
-            /* Hier werden die Buttons platziert */
-        }
-
-        button {
-            display: block;
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 8px;
-            border: none;
-            background: #0066cc;
-            color: white;
-            border-radius: 4px;
-            cursor: pointer;
-            text-align: left;
-            font-size: 14px;
-        }
-
-        button:hover {
-            background: #0052a3;
-        }
-
-        .search-box {
-            width: 100%;
             padding: 10px;
-            margin-bottom: 20px;
+            background-color: #ffffff;
             border: 1px solid #ddd;
-            border-radius: 4px;
+            border-radius: 5px;
         }
-
+        .btn-custom {
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 15px;
+            font-size: 16px;
+            margin-top: 5px;
+            width: 100%;
+            background-color: #1A3A7A; /* Dunkel dunkelblau */
+            color: white;
+        }
+        .btn-custom.active {
+            background-color: #d9a600;
+            color: white;
+        }
         .answers {
-            background: #f5f5f5; /*  HINTERGRUNDFARBE BEHALTEN  */
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            position: fixed;
+            top: 10%;
+            left: 50%;
+            transform: translate(-50%, -10%);
+            z-index: 1000;
+            width: 60%;
+            max-height: 70vh;
+            overflow-y: auto;
+            display: none;
         }
-
-        .answers h3 {
-            color: #007bff; /* ÜBERSCHRIFTENFARBE BEHALTEN */
+        .floating-buttons {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
-
-        @media (max-width: 768px) {
-            .container {
-                flex-direction: column;
-            }
-            .questions, .answers {
-                height: auto;
-                max-height: 50vh;
-            }
+        .dark-mode {
+            background-color: #1e1e1e;
+            color: white;
+        }
+        .dark-mode .questions-list { background-color: #333; }
+        .dark-mode .btn-custom { background-color: #1A3A7A; color: white; }
+        .dark-mode .btn-custom.active { background-color: #d9a600; }
+        .dark-mode .answers { background-color: #444; color: white; }
+        .search-bar {
+            margin-bottom: 10px;
+        }
+        .mode-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .mode-toggle.sun {
+            color: #FFD700; /* Gold for sun */
+        }
+        .mode-toggle.moon {
+            color: #C0C0C0; /* Silver for moon */
         }
     </style>
 </head>
-<body>
-    <div class="container">
+<body class="dark-mode">
+    <button class="mode-toggle sun" onclick="toggleDarkMode()">☀️</button>
+    <main class="container">
         <div class="questions">
-            <input type="text" class="search-box" id="searchBox" placeholder="Caută întrebări..." onkeyup="searchQuestions()">
-            <div class="question-list" id="questionsList">
-                <!-- Întrebările vor fi adăugate prin JavaScript -->
-            </div>
+            <select id="filterDropdown" class="form-control mb-3" onchange="filterQuestions()">
+                <option value="all">Toate</option>
+                <option value="video">Cu Video</option>
+                <option value="image">Cu Imagine</option>
+            </select>
+            <div class="questions-list" id="questionsList"></div>
         </div>
         <div class="answers" id="answerBox">
-            <p>Alegeți o întrebare pentru a vedea răspunsul...</p>
+            <button class="btn btn-danger mb-2" onclick="closeAnswer()">Închide</button>
+            <div id="answerContent"></div>
         </div>
-    </div>
-
+    </main>
     <script>
         const qa_data = [
-            {
+           {
                 "question": "De ce veniți la MPU? De ce sunteți astăzi aici?",
                 "answer": "Sunt aici la MPU pentru că am condus sub influența alcoolului, nu am respectat legea, am făcut un accident, am fost un egoist, am fost un pericol pentru mine și pentru alții! Mi-am dat seama că am o problemă cu alcoolul, am fost în abuz de alcool, și am încetat să beau. Astăzi aș vrea să vă arăt că m-am schimbat și că acum sunt capabil să conduc responsabil."
             },
@@ -273,44 +294,64 @@
                 "question": "Ultima dată când ați spus Nu?",
                 "answer": "Am refuzat unui prieten care sa mutat pentru a cincea oară în doi ani și care a avut nevoie din nou de oameni pentru a transporta cutii."
             }
+
         ];
 
-        function createButtons() {
+        function createButtons(data) {
             const questionsList = document.getElementById('questionsList');
             questionsList.innerHTML = '';
-            qa_data.forEach((item, index) => {
+            data.forEach((item) => {
                 const button = document.createElement('button');
+                button.classList.add('btn', 'btn-custom');
                 button.textContent = item.question;
-                button.onclick = () => showAnswer(index); 
+                button.onclick = () => showAnswer(item);
                 questionsList.appendChild(button);
             });
         }
 
-        function showAnswer(index) {
-            const answer = qa_data[index].answer; 
-            document.getElementById('answerBox').innerHTML = `
-                <h3>${qa_data[index].question}</h3> 
-                <p>${answer}</p>
+        function showAnswer(item) {
+            const answerBox = document.getElementById('answerBox');
+            const answerContent = document.getElementById('answerContent');
+            answerContent.innerHTML = `
+                <h3>${item.question}</h3>
+                ${item.answer}
             `;
+            answerBox.style.display = 'block';
+            document.querySelectorAll('.btn-custom').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
         }
 
-        function searchQuestions() {
-            const searchText = document.getElementById('searchBox').value.toLowerCase();
-            const questionsList = document.getElementById('questionsList');
-            questionsList.innerHTML = '';
-            
-            qa_data.forEach((item, index) => {
-                if (item.question.toLowerCase().includes(searchText)) {
-                    const button = document.createElement('button');
-                    button.textContent = item.question;
-                    button.onclick = () => showAnswer(index); 
-                    questionsList.appendChild(button);
-                }
+        function closeAnswer() {
+            const answerBox = document.getElementById('answerBox');
+            answerBox.style.display = 'none';
+        }
+
+        function filterQuestions() {
+            const filter = document.getElementById('filterDropdown').value;
+            const filteredData = qa_data.filter(item => {
+                if (filter === 'video') return item.answer.includes('<iframe');
+                if (filter === 'image') return item.answer.includes('<img');
+                return true;
             });
+            createButtons(filteredData);
         }
 
-        // Construirea inițială a întrebărilor
-        createButtons();
+        function toggleDarkMode() {
+            const body = document.body;
+            const toggleButton = document.querySelector('.mode-toggle');
+            body.classList.toggle('dark-mode');
+            if (body.classList.contains('dark-mode')) {
+                toggleButton.classList.remove('sun');
+                toggleButton.classList.add('moon');
+                toggleButton.innerHTML = '🌙';
+            } else {
+                toggleButton.classList.remove('moon');
+                toggleButton.classList.add('sun');
+                toggleButton.innerHTML = '☀️';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => createButtons(qa_data));
     </script>
 </body>
 </html>
